@@ -1,12 +1,12 @@
-
+import java.util.Objects;
 
 public class Task {
-    public int id;
-    public String nameTask;
-    public String description;
-    StatusTask statusTask;
+    private final int id;  // сделал поле final
+    private String nameTask;
+    private String description;
+    private Status statusTask;
 
-    public Task(int id, String nameTask, String description, StatusTask statusTask) {
+    public Task(int id, String nameTask, String description, Status statusTask) {
         this.id = id;
         this.nameTask = nameTask;
         this.description = description;
@@ -15,10 +15,6 @@ public class Task {
 
     public int getId() {
         return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
     }
 
     public String getNameTask() {
@@ -37,31 +33,34 @@ public class Task {
         this.description = description;
     }
 
-    public StatusTask getStatusTask() {
+    public Status getStatusTask() {
         return statusTask;
     }
 
-    public void setStatusTask(StatusTask statusTask) {
+    public void setStatusTask(Status statusTask) {
         this.statusTask = statusTask;
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Task task)) return false;
-
-        if (getId() != task.getId()) return false;
-        if (!getNameTask().equals(task.getNameTask())) return false;
-        if (!getDescription().equals(task.getDescription())) return false;
-        return getStatusTask() == task.getStatusTask();
+        if (o == null || getClass() != o.getClass()) return false;
+        Task task = (Task) o;
+        return id == task.id;  // сравниваем только по id
     }
 
     @Override
     public int hashCode() {
-        int result = getId();
-        result = 31 * result + getNameTask().hashCode();
-        result = 31 * result + getDescription().hashCode();
-        result = 31 * result + getStatusTask().hashCode();
-        return result;
+        return Objects.hash(id);  // хэш-код только по id
+    }
+
+    @Override
+    public String toString() {
+        return "Task{" +
+                "id=" + id +
+                ", nameTask='" + nameTask + '\'' +
+                ", description='" + description + '\'' +
+                ", statusTask=" + statusTask +
+                '}';
     }
 }
