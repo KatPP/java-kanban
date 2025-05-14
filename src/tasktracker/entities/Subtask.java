@@ -1,3 +1,5 @@
+package tasktracker.entities;
+
 public class Subtask extends Task {
     private final int epicId; // ID эпика, к которому относится подзадача
 

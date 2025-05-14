@@ -1,3 +1,5 @@
+package tasktracker.entities;
+
 import java.util.Objects;
 
 public class Task {

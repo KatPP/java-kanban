@@ -1,3 +1,9 @@
+import tasktracker.entities.Epic;
+import tasktracker.entities.Status;
+import tasktracker.entities.Subtask;
+import tasktracker.entities.Task;
+import tasktracker.service.TaskManager;
+
 public class Main {
     public static void main(String[] args) {
         TaskManager manager = new TaskManager();
