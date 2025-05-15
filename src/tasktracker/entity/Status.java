@@ -1,4 +1,4 @@
-package tasktracker.entities;
+package tasktracker.entity;
 
 public enum Status {
     NEW,

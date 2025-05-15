@@ -1,4 +1,4 @@
-package tasktracker.entities;
+package tasktracker.entity;
 
 import java.util.ArrayList;
 import java.util.List;

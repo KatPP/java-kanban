@@ -1,9 +1,9 @@
 package tasktracker.service;
 
-import tasktracker.entities.Epic;
-import tasktracker.entities.Status;
-import tasktracker.entities.Subtask;
-import tasktracker.entities.Task;
+import tasktracker.entity.Epic;
+import tasktracker.entity.Status;
+import tasktracker.entity.Subtask;
+import tasktracker.entity.Task;
 
 import java.util.*;
 
