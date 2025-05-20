@@ -12,7 +12,7 @@ public class InMemoryTaskManager implements TaskManager {
     private final Map<Integer, Task> tasks = new HashMap<>();
     private final Map<Integer, Subtask> subtasks = new HashMap<>();
     private final Map<Integer, Epic> epics = new HashMap<>();
-    private final List<Task> history = new ArrayList<>(); // <- Новое поле для истории
+    private final HistoryManager historyManager = Managers.getDefaultHistory(); // новый менеджер
 
     // Генерация нового ID
     private int generateId() {
@@ -20,17 +20,9 @@ public class InMemoryTaskManager implements TaskManager {
     }
 
     // История
-
-    private void addToHistory(Task task) {
-        if (history.size() >= 10) {
-            history.remove(0); // Удаляем самый старый элемент, если история переполнена
-        }
-        history.add(task);
-    }
-
     @Override
     public List<Task> getHistory() {
-        return new ArrayList<>(history); // Возвращаем копию, чтобы избежать изменений извне
+        return historyManager.getHistory();
     }
 
     // Методы для Task
@@ -47,9 +39,7 @@ public class InMemoryTaskManager implements TaskManager {
     @Override
     public Task getTask(int id) {
         Task task = tasks.get(id);
-        if (task != null) {
-            addToHistory(task);
-        }
+        if (task != null) historyManager.add(task);
         return task;
     }
 
@@ -91,9 +81,7 @@ public class InMemoryTaskManager implements TaskManager {
     @Override
     public Subtask getSubtask(int id) {
         Subtask subtask = subtasks.get(id);
-        if (subtask != null) {
-            addToHistory(subtask);
-        }
+        if (subtask != null) historyManager.add(subtask);
         return subtask;
     }
 
@@ -147,9 +135,7 @@ public class InMemoryTaskManager implements TaskManager {
     @Override
     public Epic getEpic(int id) {
         Epic epic = epics.get(id);
-        if (epic != null) {
-            addToHistory(epic);
-        }
+        if (epic != null) historyManager.add(epic);
         return epic;
     }
 
