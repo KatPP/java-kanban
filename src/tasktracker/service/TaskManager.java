@@ -8,6 +8,7 @@ import tasktracker.entity.Task;
 import java.util.List;
 
 public interface TaskManager {
+    List<Task> getHistory(); // <- Новый метод
     // Методы для Task
     List<Task> getAllTasks();
     void deleteAllTasks();
