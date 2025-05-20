@@ -2,11 +2,12 @@ import tasktracker.entity.Epic;
 import tasktracker.entity.Status;
 import tasktracker.entity.Subtask;
 import tasktracker.entity.Task;
+import tasktracker.service.InMemoryTaskManager;
 import tasktracker.service.TaskManager;
 
 public class Main {
     public static void main(String[] args) {
-        TaskManager manager = new TaskManager();
+        TaskManager manager = new InMemoryTaskManager();
 
         System.out.println("Создаем задачи и эпики");
 
