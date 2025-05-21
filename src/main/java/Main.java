@@ -7,19 +7,19 @@ import tasktracker.service.TaskManager;
 
 public class Main {
     public static void main(String[] args) {
-        TaskManager manager = Managers.getDefault(); // <- Используем Managers
+        TaskManager manager = Managers.getDefault();
 
-        // Создаём задачи и эпики
-        Task task1 = manager.createTask("Помыть посуду", "Помыть всю посуду вечером", Status.NEW);
-        Epic epic1 = manager.createEpic("Организовать праздник", "Подготовка к дню рождения");
-        Subtask subtask1 = manager.createSubtask("Купить продукты", "Составить список и купить", Status.NEW, epic1.getId());
+        // Создаем задачи
+        Task task1 = manager.createTask("Task 1", "Description", Status.NEW);
+        Epic epic1 = manager.createEpic("Epic 1", "Epic desc");
+        Subtask subtask1 = manager.createSubtask("Subtask 1", "Sub desc", Status.NEW, epic1.getId());
 
-        // Просматриваем задачи (добавляем в историю)
-        System.out.println(manager.getTask(task1.getId())); // Добавится в историю
-        System.out.println(manager.getEpic(epic1.getId())); // Добавится в историю
-        System.out.println(manager.getSubtask(subtask1.getId())); // Добавится в историю
+        // Просматриваем задачи
+        manager.getTask(task1.getId());
+        manager.getEpic(epic1.getId());
+        manager.getSubtask(subtask1.getId());
 
-        // Выводим историю
+        // Печатаем историю
         System.out.println("История просмотров:");
         manager.getHistory().forEach(System.out::println);
     }
