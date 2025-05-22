@@ -1,6 +1,6 @@
-package tasktracker.service;
+package tracker.service;
 
-import tasktracker.entity.Task;
+import tracker.entity.Task;
 import java.util.ArrayList;
 import java.util.List;
 

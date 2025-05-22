@@ -1,4 +1,4 @@
-package tasktracker.entity;
+package tracker.entity;
 
 import java.util.Objects;
 

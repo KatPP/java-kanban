@@ -1,15 +1,15 @@
-package tasktracker.service;
+package tracker.service;
 
 import org.junit.jupiter.api.Test;
-import tasktracker.entity.Status;
-import tasktracker.entity.Task;
+import tracker.entity.Status;
+import tracker.entity.Task;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class InMemoryHistoryManagerTest {
 
     @Test
-    void shouldKeepLast10TasksInHistory() {
+    void historyLimitedTo10Tasks() {
         HistoryManager history = Managers.getDefaultHistory();
         for (int i = 1; i <= 15; i++) {
             history.add(new Task(i, "Task " + i, "Desc", Status.NEW));
@@ -19,7 +19,7 @@ class InMemoryHistoryManagerTest {
     }
 
     @Test
-    void shouldPreserveTaskDataInHistory() {
+    void historyPreservesTaskState() {
         HistoryManager history = Managers.getDefaultHistory();
         Task original = new Task(1, "Original", "Desc", Status.NEW);
 

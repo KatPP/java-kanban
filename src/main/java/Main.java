@@ -1,9 +1,9 @@
-import tasktracker.entity.Epic;
-import tasktracker.entity.Status;
-import tasktracker.entity.Subtask;
-import tasktracker.entity.Task;
-import tasktracker.service.Managers;
-import tasktracker.service.TaskManager;
+import tracker.entity.Epic;
+import tracker.entity.Status;
+import tracker.entity.Subtask;
+import tracker.entity.Task;
+import tracker.service.Managers;
+import tracker.service.TaskManager;
 
 public class Main {
     public static void main(String[] args) {
