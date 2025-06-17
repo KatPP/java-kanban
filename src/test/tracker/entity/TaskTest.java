@@ -12,6 +12,7 @@ class TaskTest {
         Task task2 = new Task(1, "Task 2", "Another desc", Status.DONE);
         assertEquals(task1, task2, "Задачи с одинаковым id должны быть равны");
     }
+
     @Test
     void subtaskEqualsByIdOnly() {
         Subtask subtask1 = new Subtask(1, "Sub 1", "Desc 1", Status.NEW, 10);
