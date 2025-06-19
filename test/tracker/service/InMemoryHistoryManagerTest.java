@@ -25,7 +25,7 @@ class InMemoryHistoryManagerTest {
     }
 
     @Test
-    void historyShouldNotContainDuplicates() {
+    void shouldNotAllowDuplicates() {
         HistoryManager history = Managers.getDefaultHistory();
         Task task = new Task(1, "Task", "Desc", Status.NEW);
         history.add(task);
