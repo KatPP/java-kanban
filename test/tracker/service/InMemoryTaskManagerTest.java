@@ -36,4 +36,27 @@ class InMemoryTaskManagerTest {
                 () -> assertEquals(subtask, manager.getSubtask(subtask.getId()))
         );
     }
+
+    @Test
+    void removedTaskShouldNotAppearInHistory() {
+        TaskManager manager = Managers.getDefault();
+        Task task = manager.createTask("Task", "Desc", Status.NEW);
+        manager.getTask(task.getId()); // Добавляем в историю
+        manager.deleteTask(task.getId());
+        assertFalse(manager.getHistory().contains(task), "Задача осталась в истории после удаления");
+    }
+
+    @Test
+    void epicDeletionRemovesSubtasksFromHistory() {
+        TaskManager manager = Managers.getDefault();
+        Epic epic = manager.createEpic("Epic", "Desc");
+        Subtask subtask = manager.createSubtask("Sub", "Desc", Status.NEW, epic.getId());
+        manager.getEpic(epic.getId());      // Добавляем эпик в историю
+        manager.getSubtask(subtask.getId()); // Добавляем подзадачу
+        manager.deleteEpic(epic.getId());   // Удаляем эпик
+        assertAll(
+                () -> assertFalse(manager.getHistory().contains(epic)),
+                () -> assertFalse(manager.getHistory().contains(subtask))
+        );
+    }
 }

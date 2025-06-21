@@ -9,16 +9,6 @@ import static org.junit.jupiter.api.Assertions.*;
 class InMemoryHistoryManagerTest {
 
     @Test
-    void historyLimitedTo10Tasks() {
-        HistoryManager history = Managers.getDefaultHistory();
-        for (int i = 1; i <= 15; i++) {
-            history.add(new Task(i, "Task " + i, "Desc", Status.NEW));
-        }
-        assertEquals(10, history.getHistory().size(), "История должна хранить только 10 задач");
-        assertEquals("Task 6", history.getHistory().get(0).getName(), "Первая задача должна быть Task 6");
-    }
-
-    @Test
     void historyPreservesTaskState() {
         HistoryManager history = Managers.getDefaultHistory();
         Task original = new Task(1, "Original", "Desc", Status.NEW);
@@ -32,5 +22,14 @@ class InMemoryHistoryManagerTest {
                 () -> assertEquals(original.getDescription(), saved.getDescription()),
                 () -> assertEquals(original.getStatus(), saved.getStatus())
         );
+    }
+
+    @Test
+    void shouldNotAllowDuplicates() {
+        HistoryManager history = Managers.getDefaultHistory();
+        Task task = new Task(1, "Task", "Desc", Status.NEW);
+        history.add(task);
+        history.add(task); // Дублирующий вызов
+        assertEquals(1, history.getHistory().size(), "История содержит дубликаты");
     }
 }
