@@ -104,8 +104,9 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
             if (content.isEmpty()) return manager;
 
             String[] lines = content.split("\n");
-            for (int i = 1; i < lines.length; i++) {
-                Task task = fromString(lines[i]);
+            int headerLineIndex = 0; // первая строка - заголовок
+            for (int lineIndex = headerLineIndex + 1; lineIndex < lines.length; lineIndex++) {
+                Task task = fromString(lines[lineIndex]);
                 if (task instanceof Epic) {
                     manager.epics.put(task.getId(), (Epic) task);
                 } else if (task instanceof Subtask) {
