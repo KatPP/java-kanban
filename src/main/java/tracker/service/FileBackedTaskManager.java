@@ -5,17 +5,20 @@ import tracker.exceptions.ManagerSaveException;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
- * Менеджер задач с автосохранением состояния в файл (CSV-формат).
- * Наследует функциональность {@link InMemoryTaskManager} и добавляет логику работы с файлом.
+ * Менеджер задач с сохранением состояния в файл (CSV формат).
+ * Наследует функциональность InMemoryTaskManager и добавляет сохранение в файл.
  */
 public class FileBackedTaskManager extends InMemoryTaskManager {
     private final File file;
 
     /**
      * Создает менеджер с привязкой к файлу для автосохранения.
+     *
      * @param file файл для хранения данных (если не существует, будет создан).
      */
     public FileBackedTaskManager(File file) {
@@ -25,12 +28,12 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
     /**
      * Сохраняет текущее состояние менеджера в файл.
      * Вызывается автоматически после каждой модифицирующей операции.
-     *
-     * @throws ManagerSaveException если произошла ошибка записи (например, нет прав доступа к файлу).
      */
-    private void save() {
+    protected void save() {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
-            writer.write("id,type,name,status,description,epic\n");
+            writer.write("id,type,name,status,description,duration,startTime,epic\n");
+
+            // Сохраняем все типы задач
             for (Task task : getAllTasks()) {
                 writer.write(toString(task) + "\n");
             }
@@ -41,18 +44,25 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
                 writer.write(toString(subtask) + "\n");
             }
         } catch (IOException e) {
-            throw new ManagerSaveException("Ошибка сохранения в файл", e);
+            throw new ManagerSaveException("Ошибка сохранения в файл");
         }
     }
 
-    // Сериализация задачи в CSV
+    /**
+     * Сериализует задачу в строку CSV формата.
+     *
+     * @param task задача для сериализации
+     * @return строка в CSV формате
+     */
     private String toString(Task task) {
         StringJoiner joiner = new StringJoiner(",");
         joiner.add(String.valueOf(task.getId()))
                 .add(getTaskType(task).name())
                 .add(task.getName())
                 .add(task.getStatus().name())
-                .add(task.getDescription());
+                .add(task.getDescription())
+                .add(task.getDuration() != null ? String.valueOf(task.getDuration().toMinutes()) : "")
+                .add(task.getStartTime() != null ? task.getStartTime().toString() : "");
 
         if (task instanceof Subtask) {
             joiner.add(String.valueOf(((Subtask) task).getEpicId()));
@@ -62,13 +72,24 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
         return joiner.toString();
     }
 
+    /**
+     * Определяет тип задачи.
+     *
+     * @param task задача для определения типа
+     * @return тип задачи (TASK, EPIC, SUBTASK)
+     */
     private TaskType getTaskType(Task task) {
         if (task instanceof Epic) return TaskType.EPIC;
         if (task instanceof Subtask) return TaskType.SUBTASK;
         return TaskType.TASK;
     }
 
-    // Десериализация задачи из CSV
+    /**
+     * Десериализует задачу из строки CSV формата.
+     *
+     * @param value строка в CSV формате
+     * @return задача
+     */
     private static Task fromString(String value) {
         String[] parts = value.split(",");
         int id = Integer.parseInt(parts[0]);
@@ -76,37 +97,42 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
         String name = parts[2];
         Status status = Status.valueOf(parts[3]);
         String description = parts[4];
+        Duration duration = parts[5].isEmpty() ? null : Duration.ofMinutes(Long.parseLong(parts[5]));
+        LocalDateTime startTime = parts[6].isEmpty() ? null : LocalDateTime.parse(parts[6]);
 
         switch (type) {
             case TASK:
-                return new Task(id, name, description, status);
+                return new Task(id, name, description, status, duration, startTime);
             case EPIC:
                 return new Epic(id, name, description);
             case SUBTASK:
-                int epicId = Integer.parseInt(parts[5]);
-                return new Subtask(id, name, description, status, epicId);
+                int epicId = Integer.parseInt(parts[7]);
+                return new Subtask(id, name, description, status, epicId, duration, startTime);
             default:
-                throw new IllegalArgumentException("Неизвестный тип задачи");
+                throw new IllegalArgumentException("Неизвестный тип задачи: " + type);
         }
     }
 
     /**
      * Загружает данные менеджера из файла.
      *
-     * @param file файл с сохраненными данными.
-     * @return восстановленный {@link FileBackedTaskManager}.
-     * @throws ManagerSaveException если файл не существует или содержит некорректные данные.
+     * @param file файл с сохраненными данными
+     * @return восстановленный FileBackedTaskManager
+     * @throws ManagerSaveException если файл не существует или содержит некорректные данные
      */
     public static FileBackedTaskManager loadFromFile(File file) {
         FileBackedTaskManager manager = new FileBackedTaskManager(file);
+
         try {
             String content = Files.readString(file.toPath());
-            if (content.isEmpty()) return manager;
+            if (content.isEmpty() || content.equals("id,type,name,status,description,duration,startTime,epic\n")) {
+                return manager;
+            }
 
             String[] lines = content.split("\n");
-            int headerLineIndex = 0; // первая строка - заголовок
-            for (int lineIndex = headerLineIndex + 1; lineIndex < lines.length; lineIndex++) {
-                Task task = fromString(lines[lineIndex]);
+            // Пропускаем заголовок
+            for (int i = 1; i < lines.length; i++) {
+                Task task = fromString(lines[i]);
                 if (task instanceof Epic) {
                     manager.epics.put(task.getId(), (Epic) task);
                 } else if (task instanceof Subtask) {
@@ -114,17 +140,35 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
                 } else {
                     manager.tasks.put(task.getId(), task);
                 }
+
+                // Обновляем nextId
+                if (task.getId() >= manager.nextId) {
+                    manager.nextId = task.getId() + 1;
+                }
             }
+
+            // Восстанавливаем связи подзадач с эпиками
+            for (Subtask subtask : manager.subtasks.values()) {
+                Epic epic = manager.epics.get(subtask.getEpicId());
+                if (epic != null) {
+                    epic.addSubtask(subtask.getId());
+                    epic.updateTime(manager);
+                }
+            }
+
         } catch (IOException e) {
-            throw new ManagerSaveException("Ошибка загрузки из файла", e);
+            throw new ManagerSaveException("Ошибка загрузки из файла");
         }
+
         return manager;
     }
 
-    // Переопределённые методы TaskManager с автосохранением
+    // Переопределенные методы TaskManager с автосохранением
+
     @Override
-    public Task createTask(String name, String description, Status status) {
-        Task task = super.createTask(name, description, status);
+    public Task createTask(String name, String description, Status status,
+                           Duration duration, LocalDateTime startTime) {
+        Task task = super.createTask(name, description, status, duration, startTime);
         save();
         return task;
     }
@@ -148,8 +192,9 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
     }
 
     @Override
-    public Subtask createSubtask(String name, String description, Status status, int epicId) {
-        Subtask subtask = super.createSubtask(name, description, status, epicId);
+    public Subtask createSubtask(String name, String description, Status status,
+                                 int epicId, Duration duration, LocalDateTime startTime) {
+        Subtask subtask = super.createSubtask(name, description, status, epicId, duration, startTime);
         save();
         return subtask;
     }

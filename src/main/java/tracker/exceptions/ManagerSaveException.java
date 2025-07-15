@@ -11,9 +11,8 @@ public class ManagerSaveException extends RuntimeException {
      * Создает исключение с сообщением об ошибке и причиной.
      *
      * @param message описание ошибки.
-     * @param cause   исключение, вызвавшее эту ошибку (например, {@link IOException}).
      */
-    public ManagerSaveException(String message, Throwable cause) {
-        super(message, cause);
+    public ManagerSaveException(String message) {
+        super(message);
     }
 }
