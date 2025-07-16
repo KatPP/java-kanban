@@ -53,8 +53,8 @@ public class Main {
 
         // Приоритизированный список
         System.out.println("\nПриоритизированные задачи:");
-        loadedManager.getPrioritizedTasks().forEach(t ->
-                System.out.println(t.getName() + " (start: " + t.getStartTime() + ")")
+        loadedManager.getPrioritizedTasks().forEach(taskItem ->
+                System.out.println(taskItem.getName() + " (start: " + taskItem.getStartTime() + ")")
         );
     }
 }
