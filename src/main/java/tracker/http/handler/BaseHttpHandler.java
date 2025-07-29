@@ -2,6 +2,7 @@ package tracker.http.handler;
 
 import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
 import tracker.exceptions.NotFoundException;
 
 import java.io.IOException;
@@ -11,7 +12,7 @@ import java.nio.charset.StandardCharsets;
  * Базовый обработчик HTTP-запросов.
  * Предоставляет общие методы для отправки ответов и обработки ошибок.
  */
-public abstract class BaseHttpHandler {
+public abstract class BaseHttpHandler implements HttpHandler {
     protected final Gson gson = new Gson();
 
     protected void sendText(HttpExchange exchange, String text, int statusCode) throws IOException {
@@ -45,5 +46,9 @@ public abstract class BaseHttpHandler {
         } else {
             sendText(exchange, "Ошибка сервера: " + e.getMessage(), 500);
         }
+    }
+
+    protected <T> void sendJsonResponse(HttpExchange exchange, T object) throws IOException {
+        sendSuccess(exchange, gson.toJson(object));
     }
 }
