@@ -1,19 +1,27 @@
 package tracker.http.handler;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import tracker.exceptions.NotFoundException;
+import tracker.util.DurationTypeAdapter;
+import tracker.util.LocalDateTimeTypeAdapter;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.LocalDateTime;
 
 /**
  * Базовый обработчик HTTP-запросов.
  * Предоставляет общие методы для отправки ответов и обработки ошибок.
  */
 public abstract class BaseHttpHandler implements HttpHandler {
-    protected final Gson gson = new Gson();
+    protected final Gson gson = new GsonBuilder()
+            .registerTypeAdapter(Duration.class, new DurationTypeAdapter())
+            .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeTypeAdapter())
+            .create();
 
     protected void sendText(HttpExchange exchange, String text, int statusCode) throws IOException {
         byte[] response = text.getBytes(StandardCharsets.UTF_8);
@@ -29,6 +37,20 @@ public abstract class BaseHttpHandler implements HttpHandler {
 
     protected void sendCreated(HttpExchange exchange) throws IOException {
         exchange.sendResponseHeaders(201, -1);
+        exchange.close();
+    }
+
+    protected void sendCreated(HttpExchange exchange, Object object) throws IOException {
+        // Сериализуем объект в JSON
+        String jsonResponse = gson.toJson(object);
+        byte[] response = jsonResponse.getBytes(StandardCharsets.UTF_8);
+
+        // Устанавливаем заголовки
+        exchange.getResponseHeaders().add("Content-Type", "application/json;charset=utf-8");
+
+        // Отправляем ответ с кодом 201 и телом
+        exchange.sendResponseHeaders(201, response.length);
+        exchange.getResponseBody().write(response);
         exchange.close();
     }
 
