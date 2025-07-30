@@ -195,17 +195,24 @@ public class InMemoryTaskManager implements TaskManager {
 
     @Override
     public void deleteAllEpics() {
+        // Удаляем эпики из истории
         epics.keySet().forEach(historyManager::remove);
+
+        // Удаляем подзадачи эпиков из истории и приоритетов
         epics.values().forEach(epic -> {
             epic.getSubtaskIds().forEach(subtaskId -> {
                 historyManager.remove(subtaskId);
-                removeFromPrioritized(subtasks.get(subtaskId));
+                Subtask subtask = subtasks.get(subtaskId);
+                if (subtask != null) {
+                    removeFromPrioritized(subtask);
+                }
             });
         });
 
-        subtasks.values().forEach(this::removeFromPrioritized);
+        // Очищаем все коллекции
         epics.clear();
         subtasks.clear();
+        // Приоритизированные задачи будут автоматически очищены при очистке subtasks
     }
 
     @Override
@@ -220,6 +227,7 @@ public class InMemoryTaskManager implements TaskManager {
         int id = generateId();
         Epic epic = new Epic(id, name, description);
         epics.put(id, epic);
+        // Epic не добавляется в prioritizedTasks, так как у него нет времени начала
         return epic;
     }
 
@@ -238,11 +246,16 @@ public class InMemoryTaskManager implements TaskManager {
         Epic epic = epics.remove(id);
         if (epic != null) {
             historyManager.remove(id);
-            epic.getSubtaskIds().forEach(subtaskId -> {
-                subtasks.remove(subtaskId);
-                historyManager.remove(subtaskId);
-                removeFromPrioritized(subtasks.get(subtaskId));
-            });
+            // Сначала удаляем подзадачи из prioritizedTasks, потом из subtasks
+            for (Integer subtaskId : epic.getSubtaskIds()) {
+                Subtask subtask = subtasks.get(subtaskId);
+                if (subtask != null) {
+                    removeFromPrioritized(subtask);
+                    historyManager.remove(subtaskId);
+                }
+            }
+            // Затем удаляем все подзадачи эпика
+            epic.getSubtaskIds().forEach(subtasks::remove);
         }
     }
 
