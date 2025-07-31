@@ -40,9 +40,9 @@ public abstract class BaseHttpHandler implements HttpHandler {
         exchange.close();
     }
 
-    protected void sendCreated(HttpExchange exchange, Object object) throws IOException {
+    protected void sendCreated(HttpExchange exchange, Object responseObject) throws IOException {
         // Сериализуем объект в JSON
-        String jsonResponse = gson.toJson(object);
+        String jsonResponse = gson.toJson(responseObject);
         byte[] response = jsonResponse.getBytes(StandardCharsets.UTF_8);
 
         // Устанавливаем заголовки
@@ -62,15 +62,17 @@ public abstract class BaseHttpHandler implements HttpHandler {
         sendText(exchange, "Задача пересекается по времени", 406);
     }
 
-    protected void handleException(HttpExchange exchange, Exception e) throws IOException {
-        if (e instanceof NotFoundException) {
+    protected void handleException(HttpExchange exchange, Exception exception) throws IOException {
+        if (exception instanceof NotFoundException) {
             sendNotFound(exchange);
         } else {
-            sendText(exchange, "Ошибка сервера: " + e.getMessage(), 500);
+            String errorMessage = String.format("Ошибка сервера: %s", exception.getMessage());
+            sendText(exchange, errorMessage, 500);
         }
     }
 
-    protected <T> void sendJsonResponse(HttpExchange exchange, T object) throws IOException {
-        sendSuccess(exchange, gson.toJson(object));
+    protected <T> void sendJsonResponse(HttpExchange exchange, T responseObject) throws IOException {
+        String jsonResponse = gson.toJson(responseObject);
+        sendSuccess(exchange, jsonResponse);
     }
 }

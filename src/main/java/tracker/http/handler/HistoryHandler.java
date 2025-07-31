@@ -18,15 +18,17 @@ public class HistoryHandler extends BaseHttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         try {
-            if ("GET".equals(exchange.getRequestMethod())) {
+            String requestMethod = exchange.getRequestMethod();
+
+            if ("GET".equals(requestMethod)) {
                 // GET /history
-                String response = gson.toJson(manager.getHistory());
-                sendSuccess(exchange, response);
+                String historyResponse = gson.toJson(manager.getHistory());
+                sendSuccess(exchange, historyResponse);
             } else {
                 sendNotFound(exchange);
             }
-        } catch (Exception e) {
-            handleException(exchange, e);
+        } catch (Exception generalException) {
+            handleException(exchange, generalException);
         }
     }
 }

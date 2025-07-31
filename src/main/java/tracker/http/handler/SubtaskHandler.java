@@ -26,26 +26,26 @@ public class SubtaskHandler extends BaseHttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         try {
-            String method = exchange.getRequestMethod();
-            String path = exchange.getRequestURI().getPath();
-            String[] parts = path.split("/");
+            String requestMethod = exchange.getRequestMethod();
+            String requestPath = exchange.getRequestURI().getPath();
+            String[] pathParts = requestPath.split("/");
 
-            switch (method) {
+            switch (requestMethod) {
                 case "GET":
-                    if (parts.length == 2) {
+                    if (pathParts.length == 2) {
                         // GET /subtasks
                         sendJsonResponse(exchange, manager.getAllSubtasks());
-                    } else if (parts.length == 3) {
+                    } else if (pathParts.length == 3) {
                         // GET /subtasks/{id}
                         try {
-                            int id = Integer.parseInt(parts[2]);
-                            Optional<Subtask> subtask = Optional.ofNullable(manager.getSubtask(id));
+                            int subtaskId = Integer.parseInt(pathParts[2]);
+                            Optional<Subtask> subtask = Optional.ofNullable(manager.getSubtask(subtaskId));
                             if (subtask.isPresent()) {
                                 sendJsonResponse(exchange, subtask.get());
                             } else {
                                 sendNotFound(exchange);
                             }
-                        } catch (NumberFormatException e) {
+                        } catch (NumberFormatException numberFormatException) {
                             sendText(exchange, "Неверный формат ID", 400);
                         }
                     } else {
@@ -57,49 +57,50 @@ public class SubtaskHandler extends BaseHttpHandler {
                     String requestBody = new String(exchange.getRequestBody().readAllBytes());
                     JsonObject jsonObject = gson.fromJson(requestBody, JsonObject.class);
 
-                    int id = 0;
+                    int subtaskId = 0;
                     if (jsonObject.has("id") && !jsonObject.get("id").isJsonNull()) {
-                        id = jsonObject.get("id").getAsInt();
+                        subtaskId = jsonObject.get("id").getAsInt();
                     }
 
-                    String name = jsonObject.get("name").getAsString();
-                    String description = jsonObject.get("description").getAsString();
+                    String subtaskName = jsonObject.get("name").getAsString();
+                    String subtaskDescription = jsonObject.get("description").getAsString();
                     // Преобразуем строковый статус в enum Status
-                    String statusStr = jsonObject.get("status").getAsString();
-                    Status status;
+                    String statusString = jsonObject.get("status").getAsString();
+                    Status subtaskStatus;
                     try {
-                        status = Status.valueOf(statusStr.toUpperCase()); // Преобразуем в верхний регистр для надежности
-                    } catch (IllegalArgumentException e) {
-                        sendText(exchange, "Неверное значение статуса: " + statusStr, 400);
+                        subtaskStatus = Status.valueOf(statusString.toUpperCase()); // Преобразуем в верхний регистр для надежности
+                    } catch (IllegalArgumentException illegalArgumentException) {
+                        String errorMessage = String.format("Неверное значение статуса: %s", statusString);
+                        sendText(exchange, errorMessage, 400);
                         return; // Прерываем обработку
                     }
                     int epicId = jsonObject.get("epicId").getAsInt();
 
-                    Duration duration = null;
+                    Duration subtaskDuration = null;
                     if (jsonObject.has("duration") && !jsonObject.get("duration").isJsonNull()) {
-                        duration = Duration.ofMillis(jsonObject.get("duration").getAsLong());
+                        subtaskDuration = Duration.ofMillis(jsonObject.get("duration").getAsLong());
                     }
 
-                    LocalDateTime startTime = null;
+                    LocalDateTime subtaskStartTime = null;
                     if (jsonObject.has("startTime") && !jsonObject.get("startTime").isJsonNull()) {
                         // Предполагается, что время в формате ISO, как в LocalDateTimeTypeAdapter
-                        startTime = LocalDateTime.parse(jsonObject.get("startTime").getAsString());
+                        subtaskStartTime = LocalDateTime.parse(jsonObject.get("startTime").getAsString());
                     }
 
-                    if (id == 0) {
+                    if (subtaskId == 0) {
                         // Создание новой подзадачи
                         try {
-                            Subtask createdSubtask = manager.createSubtask(name, description, status, epicId, duration, startTime);
+                            Subtask createdSubtask = manager.createSubtask(subtaskName, subtaskDescription, subtaskStatus, epicId, subtaskDuration, subtaskStartTime);
                             // Возвращаем созданную подзадачу в теле ответа
                             sendCreated(exchange, createdSubtask);
-                        } catch (ManagerSaveException e) { // Обрабатываем ManagerSaveException от менеджера
+                        } catch (ManagerSaveException saveException) { // Обрабатываем ManagerSaveException от менеджера
                             sendHasOverlaps(exchange); // Отправляем 406 Not Acceptable
-                        } catch (Exception e) { // Другие исключения
-                            handleException(exchange, e);
+                        } catch (Exception generalException) { // Другие исключения
+                            handleException(exchange, generalException);
                         }
                     } else {
                         // Обновление существующей подзадачи
-                        Subtask existingSubtask = manager.getSubtask(id);
+                        Subtask existingSubtask = manager.getSubtask(subtaskId);
                         if (existingSubtask != null) {
                             // Проверяем, изменился ли epicId
                             if (existingSubtask.getEpicId() != epicId) {
@@ -110,23 +111,24 @@ public class SubtaskHandler extends BaseHttpHandler {
                             // Создаем обновленную подзадачу с тем же ID
                             // EpicId берется из существующей подзадачи, так как менять его нельзя
                             Subtask updatedSubtask = new Subtask(
-                                    id,
-                                    name,
-                                    description,
-                                    status,
+                                    subtaskId,
+                                    subtaskName,
+                                    subtaskDescription,
+                                    subtaskStatus,
                                     existingSubtask.getEpicId(), // Не меняем epicId
-                                    duration,
-                                    startTime
+                                    subtaskDuration,
+                                    subtaskStartTime
                             );
 
                             try {
                                 manager.updateSubtask(updatedSubtask);
                                 // Возвращаем обновленную подзадачу в теле ответа
                                 sendCreated(exchange, updatedSubtask);
-                            } catch (ManagerSaveException e) { // Обрабатываем ManagerSaveException от менеджера
+                            } catch (
+                                    ManagerSaveException saveException) { // Обрабатываем ManagerSaveException от менеджера
                                 sendHasOverlaps(exchange); // Отправляем 406 Not Acceptable
-                            } catch (Exception e) { // Другие исключения
-                                handleException(exchange, e);
+                            } catch (Exception generalException) { // Другие исключения
+                                handleException(exchange, generalException);
                             }
                         } else {
                             sendNotFound(exchange);
@@ -134,13 +136,13 @@ public class SubtaskHandler extends BaseHttpHandler {
                     }
                     break;
                 case "DELETE":
-                    if (parts.length == 3) {
+                    if (pathParts.length == 3) {
                         // DELETE /subtasks/{id}
                         try {
-                            int idToDelete = Integer.parseInt(parts[2]);
+                            int idToDelete = Integer.parseInt(pathParts[2]);
                             manager.deleteSubtask(idToDelete);
                             sendSuccess(exchange, "Подзадача удалена");
-                        } catch (NumberFormatException e) {
+                        } catch (NumberFormatException numberFormatException) {
                             sendText(exchange, "Неверный формат ID", 400);
                         }
                     } else {
@@ -150,13 +152,14 @@ public class SubtaskHandler extends BaseHttpHandler {
                 default:
                     sendNotFound(exchange);
             }
-        } catch (JsonSyntaxException e) {
+        } catch (JsonSyntaxException jsonException) {
             sendText(exchange, "Неверный формат JSON", 400);
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException numberFormatException) {
             sendText(exchange, "Неверный формат ID", 400);
-        } catch (Exception e) {
-            e.printStackTrace(); // Для отладки
-            sendText(exchange, "Ошибка сервера: " + e.getMessage(), 500);
+        } catch (Exception generalException) {
+            generalException.printStackTrace(); // Для отладки
+            String errorMessage = String.format("Ошибка сервера: %s", generalException.getMessage());
+            sendText(exchange, errorMessage, 500);
         }
     }
 }
