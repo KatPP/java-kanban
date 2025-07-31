@@ -1,0 +1,78 @@
+package tracker.http.handler;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import tracker.exceptions.NotFoundException;
+import tracker.util.DurationTypeAdapter;
+import tracker.util.LocalDateTimeTypeAdapter;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.LocalDateTime;
+
+/**
+ * Базовый обработчик HTTP-запросов.
+ * Предоставляет общие методы для отправки ответов и обработки ошибок.
+ */
+public abstract class BaseHttpHandler implements HttpHandler {
+    protected final Gson gson = new GsonBuilder()
+            .registerTypeAdapter(Duration.class, new DurationTypeAdapter())
+            .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeTypeAdapter())
+            .create();
+
+    protected void sendText(HttpExchange exchange, String text, int statusCode) throws IOException {
+        byte[] response = text.getBytes(StandardCharsets.UTF_8);
+        exchange.getResponseHeaders().add("Content-Type", "application/json;charset=utf-8");
+        exchange.sendResponseHeaders(statusCode, response.length);
+        exchange.getResponseBody().write(response);
+        exchange.close();
+    }
+
+    protected void sendSuccess(HttpExchange exchange, String response) throws IOException {
+        sendText(exchange, response, 200);
+    }
+
+    protected void sendCreated(HttpExchange exchange) throws IOException {
+        exchange.sendResponseHeaders(201, -1);
+        exchange.close();
+    }
+
+    protected void sendCreated(HttpExchange exchange, Object responseObject) throws IOException {
+        // Сериализуем объект в JSON
+        String jsonResponse = gson.toJson(responseObject);
+        byte[] response = jsonResponse.getBytes(StandardCharsets.UTF_8);
+
+        // Устанавливаем заголовки
+        exchange.getResponseHeaders().add("Content-Type", "application/json;charset=utf-8");
+
+        // Отправляем ответ с кодом 201 и телом
+        exchange.sendResponseHeaders(201, response.length);
+        exchange.getResponseBody().write(response);
+        exchange.close();
+    }
+
+    protected void sendNotFound(HttpExchange exchange) throws IOException {
+        sendText(exchange, "Ресурс не найден", 404);
+    }
+
+    protected void sendHasOverlaps(HttpExchange exchange) throws IOException {
+        sendText(exchange, "Задача пересекается по времени", 406);
+    }
+
+    protected void handleException(HttpExchange exchange, Exception exception) throws IOException {
+        if (exception instanceof NotFoundException) {
+            sendNotFound(exchange);
+        } else {
+            String errorMessage = String.format("Ошибка сервера: %s", exception.getMessage());
+            sendText(exchange, errorMessage, 500);
+        }
+    }
+
+    protected <T> void sendJsonResponse(HttpExchange exchange, T responseObject) throws IOException {
+        String jsonResponse = gson.toJson(responseObject);
+        sendSuccess(exchange, jsonResponse);
+    }
+}
